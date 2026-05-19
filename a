@@ -181,7 +181,6 @@ GROUP BY vendidos
 
 -- 9. clientes que realizaron mas de 5 pedidos
 
-SELECT clientes.nombre, pedidos.id COUNT ()
+SELECT clientes.nombre, pedidos.id 
 FROM clientes 
 JOIN pedidos ON pedidos.id_cliente = clientes.id 
-GROUP BY clientes.nombre, pedidos.id
