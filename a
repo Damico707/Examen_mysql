@@ -176,7 +176,7 @@ JOIN pedidos ON pedidos.id_cliente = clientes.id
 
 SELECT menu.nombre,COUNT(*) vendidos
 FROM menu WHERE id=3
-JOIN pedidos ON pedidos.id = detalle_pedido.id_pedido }
+JOIN pedidos ON pedidos.id = detalle_pedido.id_pedido 
 GROUP BY vendidos
 
 -- 9. clientes que realizaron mas de 5 pedidos
