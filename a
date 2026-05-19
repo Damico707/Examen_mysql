@@ -1,0 +1,187 @@
+DROP TABLE IF EXISTS detalle_pedido;
+DROP TABLE IF EXISTS pedidos;
+DROP TABLE IF EXISTS combos;
+DROP TABLE IF EXISTS adicionales;
+DROP TABLE IF EXISTS categoria;
+DROP TABLE IF EXISTS menu;
+DROP TABLE IF EXISTS clientes;
+
+
+CREATE TABLE clientes (
+	id INT UNIQUE NOT NULL AUTO_INCREMENT,
+	nombre VARCHAR(50),
+	contacto CHAR(10),
+	
+	PRIMARY KEY(id)
+);
+
+INSERT INTO clientes (nombre, contacto) VALUES
+('juan', '3011548374'),
+('alejandro','301876456'),
+('juan', '3157465843')
+
+
+CREATE TABLE menu (  
+	id INT UNIQUE AUTO_INCREMENT,
+	nombre VARCHAR(60),
+	precio DECIMAL (10,2),
+	categoria INT NOT NULL,
+	
+	FOREIGN KEY (categoria) REFERENCES categoria (id),
+	PRIMARY KEY(id)
+);
+
+INSERT INTO menu (nombre, precio, categoria) VALUES
+('pizzaHawaiana', '8000','1'),
+('pizzaColombiana', '8000','1'),
+('panzarottis', '8000','1'),
+('limonada', '5000','2'),
+('cocacola', '4000','2'),
+('helado', '3000','3')
+
+
+CREATE TABLE categoria (
+	id INT UNIQUE NOT NULL AUTO_INCREMENT,
+	nombre VARCHAR(60),
+	
+	PRIMARY KEY(id)
+); 
+
+INSERT INTO categoria (nombre) values
+('pizzas'),
+('bebidas'),
+('postres')
+
+CREATE TABLE adicionales (
+	id INT UNIQUE NOT NULL AUTO_INCREMENT,
+	nombre VARCHAR(50),
+	precio DECIMAL(10,2),
+	
+	PRIMARY KEY(id)
+);
+
+INSERT INTO adicionales (nombre, precio) VALUES
+('extraQueso', '3000'),
+('salaExtra', '2000'),
+('bordeBOcadillo', '7000')
+
+CREATE TABLE combos (
+	id INT UNIQUE AUTO_INCREMENT,
+	nombre VARCHAR(70),
+	precio DECIMAL (10,2),
+
+	PRIMARY KEY(id)
+);
+
+INSERT INTO combos (nombre, precio)VALUES
+('pizza+helado','12000'),
+('cocacola+pizza','10000'),
+('2_pizzas+2_limonadas','20000')
+
+DROP TABLE IF EXISTS pedidos;
+
+CREATE TABLE pedidos(
+	id INT NOT NULL AUTO_INCREMENT,
+	id_cliente INT NOT NULL,
+	id_menu INT,  -- no es nescesario el not null pq puede ser o del menu normal o del menu de combos
+	id_combo INT,
+	total DECIMAL (10,2),
+	consumo ENUM ('recogen','consumeTienda') NOT NULL,
+	
+	FOREIGN KEY (id_cliente) REFERENCES clientes(id),
+	FOREIGN KEY (id_menu) REFERENCES menu(id),
+	FOREIGN KEY(id_combo) REFERENCES combos(id),
+	PRIMARY KEY(id)
+);
+
+INSERT INTO pedidos (id_cliente,id_menu,id_combo,total,consumo) VALUES
+('1','3',NULL,'8000','recogen'),
+('2',NULL,'2','8000','consumeTienda'),
+('3','5',NULL,'8000','consumeTienda'),		-- predomina el 3 en el menu y el 2 en los combos
+('2',NULL,'1','8000','recogen'),
+('3',NULL,'2','8000','consumeTienda'),
+('3','3',NULL,'8000','recogen'),		
+('1','1',NULL,'8000','consumeTienda'),
+('1','3',NULL,'11000','consumeTienda')
+
+
+CREATE TABLE detalle_pedido(
+	id INT UNIQUE NOT NULL AUTO_INCREMENT,
+	id_pedido INT NOT NULL,
+	id_producto INT,
+	id_combo INT,
+	cantidad INT NOT NULL,
+	id_adicionales INT,
+	
+	FOREIGN KEY(id_combo) REFERENCES combos (id),
+	FOREIGN KEY(id_pedido) REFERENCES pedidos (id),
+	FOREIGN KEY (id_producto) REFERENCES menu (id),
+	FOREIGN KEY (id_adicionales) REFERENCES adicionales (id),
+	PRIMARY KEY (id)
+);
+
+INSERT INTO detalle_pedido (id_pedido,id_producto,id_combo,cantidad,id_adicionales) VALUES
+('1','3',NULL,'2','2'),
+('2',NULL,'2','1','3'),
+('3','5',NULL,'4','1'),
+('4',NULL,'1','2','2'),
+('5',Null,'2','1','1'),
+('6','3',NULL,'1','1'),
+('7','1',NULL,'3','1');
+('8','3',NULL,'3','1');
+('8','3',NULL,'3','1');
+
+-- === CONSULTAS ======
+
+-- 1. productos mas vendidos
+
+-- 2. total de ingresos generados por cada combo
+
+SELECT combos.id,combos.nombre ,SUM(combos.precio*detalle_pedido.cantidad) AS total_combos_vendidos
+FROM combos 
+JOIN detalle_pedido ON detalle_pedido.id_combo = combos.id 
+GROUP BY detalle_pedido.id_combo
+
+
+-- 3. pedidos realizados para recoger vs comer en la pizzeria (se visualizan ambos)
+
+SELECT pedidos.id , detalle_pedido.id_producto ,detalle_pedido.id_combo, pedidos.consumo
+FROM pedidos 
+JOIN detalle_pedido ON detalle_pedido.id_pedido = pedidos.id
+
+-- 4.adiciones mas solicitadas 
+
+SELECT pedidos.id AS IDpedidos,  adicionales.nombre 
+FROM pedidos 
+JOIN detalle_pedido ON detalle_pedido.id = pedidos.id
+JOIN adicionales ON adicionales.id = detalle_pedido.id_adicionales 
+
+-- 5. Cantidad total de productos vendidos por categoria
+
+SELECT detalle_pedido.id, detalle_pedido.id_producto, menu.nombre, categoria.nombre
+FROM detalle_pedido 
+JOIN menu ON menu.id = detalle_pedido.id_producto  	-- Solo muestra los de pedidos y no combos pq al ser combo tiene mas de una clasificacion y esta busqueda es con una categoiria especifica
+JOIN categoria ON categoria.id = menu.categoria 
+
+-- 6. promedio de pizzas pedidas por cliente
+
+SELECT clientes.nombre, pedidos.id AS pizzas_pedidas
+FROM clientes 
+JOIN pedidos ON pedidos.id_cliente = clientes.id 
+
+
+-- 7. Total de ventas por dia de la semana
+
+-- 8. cantidad de panzarottis vendidos con extra queso
+
+SELECT menu.nombre,COUNT(*) vendidos
+FROM menu WHERE id=3
+JOIN pedidos ON pedidos.id = detalle_pedido.id_pedido }
+GROUP BY vendidos
+
+-- 9. clientes que realizaron mas de 5 pedidos
+
+SELECT clientes.nombre, pedidos.id COUNT ()
+FROM clientes 
+JOIN pedidos ON pedidos.id_cliente = clientes.id 
+GROUP BY clientes.nombre, pedidos.id
